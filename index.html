@@ -1,0 +1,2882 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>منصة الرعاية الاجتماعية المدرسية المتكاملة</title>
+
+  <!-- Google Fonts: Cairo -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Chart.js for Visual Reports -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SheetJS for Excel Import/Export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Firebase Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-hover: #172554;
+      --primary-light: #3b82f6;
+      --accent: #0d9488;
+      --accent-hover: #0f766e;
+      --bg-body: #f8fafc;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+      --danger-bg: #fee2e2;
+      --warning: #f59e0b;
+      --warning-bg: #fef3c7;
+      --success: #10b981;
+      --success-bg: #d1fae5;
+      --info: #0284c7;
+      --info-bg: #e0f2fe;
+      --sidebar-width: 260px;
+      --radius: 12px;
+      --shadow: 0 2px 4px -1px rgba(0,0,0,0.06), 0 4px 6px -1px rgba(0,0,0,0.08);
+      --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Cairo', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      direction: rtl;
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Backdrop overlay for mobile sidebar */
+    .sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(3px);
+      z-index: 1050;
+      opacity: 0;
+      visibility: hidden;
+      transition: var(--transition);
+    }
+    .sidebar-backdrop.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Responsive Sidebar */
+    aside.sidebar {
+      width: var(--sidebar-width);
+      background: linear-gradient(180deg, #172554 0%, #1e3a8a 100%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      z-index: 1100;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 4px 0 15px rgba(0,0,0,0.07);
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .brand-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-box i {
+      font-size: 1.8rem;
+      color: #38bdf8;
+    }
+
+    .brand-box h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .brand-box span {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      display: block;
+    }
+
+    .sidebar-close-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: #cbd5e1;
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .sidebar-menu {
+      list-style: none;
+      padding: 16px 10px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .sidebar-menu li {
+      margin-bottom: 5px;
+    }
+
+    .sidebar-menu a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      color: #cbd5e1;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: var(--transition);
+    }
+
+    .sidebar-menu a:hover {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+    }
+
+    .sidebar-menu a.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);
+    }
+
+    .sidebar-menu a i {
+      font-size: 1.1rem;
+      width: 22px;
+      text-align: center;
+    }
+
+    .user-profile-box {
+      padding: 14px;
+      background: rgba(0,0,0,0.25);
+      margin: 10px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-avatar {
+      width: 38px;
+      height: 38px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .user-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .user-info h4 {
+      font-size: 0.8rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-info p {
+      font-size: 0.68rem;
+      color: #38bdf8;
+    }
+
+    /* Main Container */
+    main.main-content {
+      margin-right: var(--sidebar-width);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      transition: var(--transition);
+      width: calc(100% - var(--sidebar-width));
+    }
+
+    /* Top Navigation */
+    header.top-nav {
+      background: var(--bg-card);
+      height: 65px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .nav-right-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .menu-toggle-btn {
+      display: none;
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      color: var(--text-main);
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+    .menu-toggle-btn:hover {
+      background: #e2e8f0;
+    }
+
+    .page-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .connection-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: #e2e8f0;
+      color: #475569;
+    }
+    .connection-badge.connected {
+      background: var(--success-bg);
+      color: #065f46;
+    }
+
+    /* Content Area */
+    .content-area {
+      padding: 20px;
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .view-section {
+      display: none;
+      animation: fadeIn 0.2s ease-in;
+    }
+    .view-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      height: 4px;
+      background: var(--primary-light);
+    }
+    .stat-card.accent::before { background: var(--accent); }
+    .stat-card.warning::before { background: var(--warning); }
+    .stat-card.danger::before { background: var(--danger); }
+    .stat-card.success::before { background: var(--success); }
+
+    .stat-info h3 {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .stat-info .stat-number {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .stat-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+    }
+    .stat-icon.blue { background: var(--info-bg); color: var(--info); }
+    .stat-icon.teal { background: #ccfbf1; color: var(--accent); }
+    .stat-icon.amber { background: var(--warning-bg); color: var(--warning); }
+    .stat-icon.red { background: var(--danger-bg); color: var(--danger); }
+    .stat-icon.green { background: var(--success-bg); color: var(--success); }
+
+    /* Charts Row */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .chart-container {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-header {
+      margin-bottom: 14px;
+    }
+
+    .chart-header h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .chart-canvas-box {
+      flex: 1;
+      position: relative;
+      min-height: 250px;
+    }
+
+    /* Panels */
+    .panel {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      background-color: #fff;
+    }
+
+    .panel-header h3 {
+      font-size: 0.98rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-body {
+      padding: 18px;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: var(--transition);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-accent:hover { background: var(--accent-hover); }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+    }
+    .btn-outline:hover { background: #f1f5f9; }
+
+    .btn-whatsapp { background: #25d366; color: #fff; }
+    .btn-whatsapp:hover { background: #1eb956; }
+
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+
+    .btn-sm { padding: 5px 10px; font-size: 0.78rem; border-radius: 6px; }
+
+    /* Forms */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      color: var(--text-main);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background-color: #fff;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      transition: var(--transition);
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 85px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    /* Toolbars */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .search-input-box {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .search-input-box i {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .search-input-box input {
+      padding-right: 34px;
+    }
+
+    /* Tables */
+    .table-responsive {
+      overflow-x: auto;
+      width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: right;
+      font-size: 0.85rem;
+      min-width: 600px;
+    }
+
+    table.data-table th {
+      background-color: #f8fafc;
+      padding: 10px 14px;
+      color: var(--text-muted);
+      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    table.data-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      color: var(--text-main);
+    }
+
+    table.data-table tbody tr:hover {
+      background-color: #f8fafc;
+    }
+
+    /* Empty states in tables & views */
+    .empty-state-box {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+    .empty-state-box i {
+      font-size: 2.5rem;
+      color: #cbd5e1;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .empty-state-box h4 {
+      font-size: 1rem;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+    .empty-state-box p {
+      font-size: 0.8rem;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge-urgent { background: var(--danger-bg); color: var(--danger); }
+    .badge-medium { background: var(--warning-bg); color: var(--warning); }
+    .badge-low { background: var(--info-bg); color: var(--info); }
+    .badge-new { background: #e0e7ff; color: #4338ca; }
+    .badge-in-progress { background: var(--warning-bg); color: #b45309; }
+    .badge-resolved { background: var(--success-bg); color: var(--success); }
+    .badge-closed { background: #f1f5f9; color: #475569; }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 16px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #fff;
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 620px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      animation: modalIn 0.2s ease-out;
+    }
+
+    .modal-card.large {
+      max-width: 800px;
+    }
+
+    @keyframes modalIn {
+      from { transform: scale(0.96); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #f8fafc;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .modal-header h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .modal-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-footer {
+      padding: 14px 20px;
+      background: #f8fafc;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* WhatsApp Chips */
+    .template-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .template-chip {
+      background: #f1f5f9;
+      padding: 5px 10px;
+      border-radius: 16px;
+      font-size: 0.76rem;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      transition: var(--transition);
+    }
+
+    .template-chip:hover, .template-chip.active {
+      background: #e0f2fe;
+      border-color: var(--primary-light);
+      color: var(--primary);
+    }
+
+    /* Timeline */
+    .timeline {
+      position: relative;
+      margin-top: 16px;
+      padding-right: 18px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      top: 5px;
+      right: 6px;
+      bottom: 0;
+      width: 2px;
+      background: var(--border);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      top: 6px;
+      right: -15px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid #fff;
+    }
+
+    .timeline-content {
+      background: #f8fafc;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    /* Printable Report */
+    .printable-report {
+      background: #fff;
+      padding: 24px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .report-school-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px double var(--border);
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      padding: 12px 18px;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow-lg);
+      z-index: 9999;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.25s ease;
+      max-width: 90vw;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast-success { background: #059669; }
+    .toast-error { background: #dc2626; }
+    .toast-info { background: #0284c7; }
+
+    /* Print View */
+    @media print {
+      aside.sidebar, header.top-nav, .no-print, .btn, .toolbar, .sidebar-backdrop {
+        display: none !important;
+      }
+      main.main-content {
+        margin-right: 0 !important;
+        width: 100% !important;
+      }
+      body {
+        background: #fff !important;
+      }
+      .printable-report {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+    }
+
+    /* Responsive Breakpoints & Sidebar Logic */
+    @media (max-width: 991px) {
+      aside.sidebar {
+        transform: translateX(100%);
+      }
+      aside.sidebar.open {
+        transform: translateX(0);
+      }
+      .sidebar-close-btn {
+        display: block;
+      }
+      main.main-content {
+        margin-right: 0;
+        width: 100%;
+      }
+      .menu-toggle-btn {
+        display: inline-flex;
+      }
+      .charts-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .content-area {
+        padding: 14px;
+      }
+      .top-nav {
+        padding: 0 14px;
+      }
+      .page-title span {
+        font-size: 0.95rem;
+      }
+      .top-actions .btn-text-hide {
+        display: none;
+      }
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .stat-card {
+        padding: 12px;
+      }
+      .stat-info .stat-number {
+        font-size: 1.35rem;
+      }
+      .stat-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Backdrop for Mobile Sidebar -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-box">
+        <i class="fa-solid fa-graduation-cap"></i>
+        <div>
+          <h2>الرعاية الطلابية</h2>
+          <span>منظومة الأخصائي الاجتماعي</span>
+        </div>
+      </div>
+      <button class="sidebar-close-btn" onclick="closeSidebar()" aria-label="إغلاق القائمة">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li>
+        <a href="#dashboard" class="nav-link active" data-target="sec-dashboard">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>لوحة التحكم الرئيسية</span>
+        </a>
+      </li>
+      <li>
+        <a href="#students" class="nav-link" data-target="sec-students">
+          <i class="fa-solid fa-user-graduate"></i>
+          <span>سجل الطلاب</span>
+        </a>
+      </li>
+      <li>
+        <a href="#cases" class="nav-link" data-target="sec-cases">
+          <i class="fa-solid fa-clipboard-user"></i>
+          <span>الحالات الاجتماعية والسلوكية</span>
+        </a>
+      </li>
+      <li>
+        <a href="#whatsapp" class="nav-link" data-target="sec-whatsapp">
+          <i class="fa-brands fa-whatsapp"></i>
+          <span>مركز رسائل واتساب</span>
+        </a>
+      </li>
+      <li>
+        <a href="#reports" class="nav-link" data-target="sec-reports">
+          <i class="fa-solid fa-file-invoice"></i>
+          <span>التقارير والإحصائيات</span>
+        </a>
+      </li>
+      <li>
+        <a href="#settings" class="nav-link" data-target="sec-settings">
+          <i class="fa-solid fa-sliders"></i>
+          <span>الإعدادات والبيانات المدرسية</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="user-profile-box">
+      <div class="user-avatar" id="avatarLetter">أ</div>
+      <div class="user-info">
+        <h4 id="userNameDisplay">الأخصائي الاجتماعي</h4>
+        <p id="userRoleDisplay">المرشد الطلابي</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+    
+    <!-- Top Nav Header -->
+    <header class="top-nav">
+      <div class="nav-right-wrap">
+        <button class="menu-toggle-btn" id="mobileMenuBtn" onclick="toggleSidebar()" aria-label="فتح القائمة">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="page-title" id="pageTitleHeading">
+          <i class="fa-solid fa-chart-pie" style="color:var(--accent);"></i>
+          <span>لوحة التحكم الرئيسية</span>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <div id="connectionStatusBadge" class="connection-badge">
+          <i class="fa-solid fa-circle" style="font-size: 7px;"></i> <span id="connectionStatusText">ذاكرة المتصفح</span>
+        </div>
+        <button class="btn btn-accent btn-sm" onclick="openNewCaseModal()">
+          <i class="fa-solid fa-plus"></i> <span class="btn-text-hide">فتح حالة</span>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="openStudentModal()">
+          <i class="fa-solid fa-user-plus"></i> <span class="btn-text-hide">إضافة طالب</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="content-area">
+
+      <!-- ================= Section 1: Dashboard ================= -->
+      <section id="sec-dashboard" class="view-section active">
+        
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-info">
+              <h3>إجمالي الطلاب</h3>
+              <div class="stat-number" id="statTotalStudents">0</div>
+            </div>
+            <div class="stat-icon blue"><i class="fa-solid fa-users"></i></div>
+          </div>
+
+          <div class="stat-card accent">
+            <div class="stat-info">
+              <h3>الحالات المسجلة</h3>
+              <div class="stat-number" id="statTotalCases">0</div>
+            </div>
+            <div class="stat-icon teal"><i class="fa-solid fa-folder-open"></i></div>
+          </div>
+
+          <div class="stat-card warning">
+            <div class="stat-info">
+              <h3>حالات قيد المتابعة</h3>
+              <div class="stat-number" id="statFollowupCases">0</div>
+            </div>
+            <div class="stat-icon amber"><i class="fa-solid fa-clock-rotate-left"></i></div>
+          </div>
+
+          <div class="stat-card danger">
+            <div class="stat-info">
+              <h3>حالات عاجلة وحرجة</h3>
+              <div class="stat-number" id="statUrgentCases">0</div>
+            </div>
+            <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          </div>
+
+          <div class="stat-card success">
+            <div class="stat-info">
+              <h3>تمت معالجتها</h3>
+              <div class="stat-number" id="statResolvedCases">0</div>
+            </div>
+            <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-row">
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3><i class="fa-solid fa-chart-column" style="color:var(--primary);"></i> توزيع الحالات حسب نوع المشكلة</h3>
+            </div>
+            <div class="chart-canvas-box">
+              <canvas id="caseTypeChart"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3><i class="fa-solid fa-chart-pie" style="color:var(--accent);"></i> تصنيف مراحل المعالجة</h3>
+            </div>
+            <div class="chart-canvas-box">
+              <canvas id="caseStatusChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Urgent Follow-ups Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-bell" style="color:var(--danger);"></i> تنبيهات الحالات العاجلة التي تتطلب تدخلاً سريعاً</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>رقم الطالب</th>
+                  <th>اسم الطالب</th>
+                  <th>الصف</th>
+                  <th>نوع الحالة</th>
+                  <th>درجة الأهمية</th>
+                  <th>تاريخ الحالة</th>
+                  <th>الإجراء</th>
+                </tr>
+              </thead>
+              <tbody id="urgentCasesTableBody">
+                <!-- Dynamically populated or empty state -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Section 2: Students ================= -->
+      <section id="sec-students" class="view-section">
+        <div class="panel">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-id-card"></i> قاعدة بيانات الطلاب المدرسية</h3>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn btn-outline btn-sm" onclick="triggerExcelFileInput()">
+                <i class="fa-solid fa-file-excel" style="color:#10b981;"></i> استيراد ملف Excel
+              </button>
+              <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="handleExcelImport(event)">
+              <button class="btn btn-outline btn-sm" onclick="exportStudentsToExcel()">
+                <i class="fa-solid fa-download"></i> تصدير Excel
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="openStudentModal()">
+                <i class="fa-solid fa-user-plus"></i> إضافة طالب
+              </button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <!-- Filter Toolbar -->
+            <div class="toolbar">
+              <div class="search-input-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="studentSearchInput" class="form-control" placeholder="البحث برقم الطالب أو الاسم أو الهاتف..." onkeyup="filterStudentsTable()">
+              </div>
+              <div style="min-width: 150px;">
+                <select id="studentGradeFilter" class="form-control" onchange="filterStudentsTable()">
+                  <option value="">جميع الصفوف</option>
+                  <option value="الأول">الأول</option>
+                  <option value="الثاني">الثاني</option>
+                  <option value="الثالث">الثالث</option>
+                  <option value="الرابع">الرابع</option>
+                  <option value="الخامس">الخامس</option>
+                  <option value="السادس">السادس</option>
+                  <option value="السابع">السابع</option>
+                  <option value="الثامن">الثامن</option>
+                  <option value="التاسع">التاسع</option>
+                  <option value="العاشر">العاشر</option>
+                  <option value="الحادي عشر">الحادي عشر</option>
+                  <option value="الثاني عشر">الثاني عشر</option>
+                </select>
+              </div>
+              <div style="min-width: 150px;">
+                <select id="studentFamilyFilter" class="form-control" onchange="filterStudentsTable()">
+                  <option value="">جميع الحالات الأسرية</option>
+                  <option value="مستقرة">مستقرة</option>
+                  <option value="منفصلين (طلاق)">منفصلين (طلاق)</option>
+                  <option value="يتيم الأب">يتيم الأب</option>
+                  <option value="يتيم الأم">يتيم الأم</option>
+                  <option value="يتيم الأبوين">يتيم الأبوين</option>
+                  <option value="ذوي الدخل المحدود">ذوي الدخل المحدود</option>
+                  <option value="أخرى">أخرى</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>رقم الطالب</th>
+                    <th>اسم الطالب الرباعي</th>
+                    <th>الصف</th>
+                    <th>هاتف ولي الأمر</th>
+                    <th>الوضع الأسري</th>
+                    <th>الحالات النشطة</th>
+                    <th>الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="studentsTableBody">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Section 3: Cases ================= -->
+      <section id="sec-cases" class="view-section">
+        <div class="panel">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-folder-tree"></i> سجل متابعة الحالات الاجتماعية والسلوكية</h3>
+            <button class="btn btn-accent btn-sm" onclick="openNewCaseModal()">
+              <i class="fa-solid fa-plus"></i> فتح ملف حالة جديدة
+            </button>
+          </div>
+          <div class="panel-body">
+            <!-- Filter Toolbar -->
+            <div class="toolbar">
+              <div class="search-input-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="caseSearchInput" class="form-control" placeholder="البحث باسم الطالب أو رقم القيد أو الوصف..." onkeyup="filterCasesTable()">
+              </div>
+              <select id="caseTypeFilter" class="form-control" style="width: auto;" onchange="filterCasesTable()">
+                <option value="">كل أنواع الحالات</option>
+                <option value="اجتماعية">اجتماعية</option>
+                <option value="سلوكية">سلوكية</option>
+                <option value="نفسية">نفسية</option>
+                <option value="تعليمية">تعليمية</option>
+              </select>
+              <select id="casePriorityFilter" class="form-control" style="width: auto;" onchange="filterCasesTable()">
+                <option value="">كل درجات الأهمية</option>
+                <option value="عاجلة">عاجلة / قصوى</option>
+                <option value="متوسطة">متوسطة</option>
+                <option value="عادية">عادية</option>
+              </select>
+              <select id="caseStatusFilter" class="form-control" style="width: auto;" onchange="filterCasesTable()">
+                <option value="">كل الحالات</option>
+                <option value="جديدة">جديدة</option>
+                <option value="قيد المتابعة">قيد المتابعة</option>
+                <option value="تمت المعالجة">تمت المعالجة</option>
+                <option value="مغلقة">مغلقة</option>
+              </select>
+            </div>
+
+            <!-- Cases Table -->
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>كود الحالة</th>
+                    <th>اسم الطالب</th>
+                    <th>الصف</th>
+                    <th>نوع الحالة</th>
+                    <th>الأهمية</th>
+                    <th>تاريخ التسجيل</th>
+                    <th>مرحلة المتابعة</th>
+                    <th>الجلسات</th>
+                    <th>الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="casesTableBody">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Section 4: WhatsApp ================= -->
+      <section id="sec-whatsapp" class="view-section">
+        <div class="panel">
+          <div class="panel-header">
+            <h3><i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> مركز التواصل والمراسلة عبر واتساب</h3>
+          </div>
+          <div class="panel-body">
+            <div class="form-row">
+              <div style="flex: 1.2;">
+                <div class="form-group">
+                  <label>قوالب الرسائل الجاهزة:</label>
+                  <div class="template-chips">
+                    <span class="template-chip" onclick="applyWaTemplate('attendance', event)">إشعار غياب أو تأخر</span>
+                    <span class="template-chip" onclick="applyWaTemplate('behavior', event)">ملاحظة سلوكية هامة</span>
+                    <span class="template-chip" onclick="applyWaTemplate('meeting', event)">دعوة اجتماع مع الأخصائي</span>
+                    <span class="template-chip" onclick="applyWaTemplate('praise', event)">شكر وتقدير وتحسن</span>
+                    <span class="template-chip" onclick="applyWaTemplate('general', event)">متابعة عامة</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="waStudentSelect">اختر الطالب لملء رقم الهاتف تلقائياً:</label>
+                  <select id="waStudentSelect" class="form-control" onchange="onWhatsAppStudentSelected()">
+                    <option value="">-- حدد الطالب من السجل --</option>
+                  </select>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="waPhoneInput">رقم هاتف ولي الأمر (بالصيغة الدولية):</label>
+                    <input type="text" id="waPhoneInput" class="form-control" placeholder="966500000000">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="waMessageBody">نص الرسالة الموجهة لولي الأمر:</label>
+                  <textarea id="waMessageBody" class="form-control" style="min-height: 120px;" placeholder="اكتب نص الرسالة هنا..."></textarea>
+                  <small style="color:var(--text-muted); display:block; margin-top:4px;">
+                    المتغيرات التلقائية المتاحة: {اسم_الطالب} ، {الصف} ، {اسم_المدرسة}
+                  </small>
+                </div>
+
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                  <button class="btn btn-whatsapp" onclick="sendWhatsAppDirect()">
+                    <i class="fa-brands fa-whatsapp"></i> إرسال عبر WhatsApp
+                  </button>
+                  <button class="btn btn-outline" onclick="copyWhatsAppText()">
+                    <i class="fa-regular fa-copy"></i> نسخ النص
+                  </button>
+                </div>
+              </div>
+
+              <!-- Preview -->
+              <div style="flex: 0.8; background:#efeae2; border-radius:10px; padding:16px; border:1px solid #dcdcdc; display:flex; flex-direction:column; justify-content:space-between; margin-top:10px;">
+                <div>
+                  <div style="background:#075e54; color:#fff; padding:8px 12px; border-radius:6px; font-size:0.8rem; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-brands fa-whatsapp"></i> معاينة شكل الرسالة
+                  </div>
+                  <div style="background:#fff; padding:12px; border-radius:8px; font-size:0.85rem; white-space:pre-wrap; line-height:1.5; border:1px solid rgba(0,0,0,0.05);" id="waLivePreviewBox">
+                    السلام عليكم ورحمة الله وبركاته...
+                  </div>
+                </div>
+                <div style="margin-top:14px; font-size:0.72rem; color:#666; text-align:center;">
+                  * يدعم الإرسال الفوري لخدمة WhatsApp Web والتطبيق الرسمي Click to Chat.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Section 5: Reports ================= -->
+      <section id="sec-reports" class="view-section">
+        <div class="panel no-print">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-print"></i> مركز التقارير المدرسية الرسمية</h3>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary btn-sm" onclick="window.print()">
+                <i class="fa-solid fa-print"></i> طباعة / حفظ كـ PDF
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="exportFullReportExcel()">
+                <i class="fa-solid fa-file-excel" style="color:#10b981;"></i> تصدير Excel
+              </button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>نوع التقرير المطلوب:</label>
+                <select id="reportTypeSelect" class="form-control" onchange="generateReportView()">
+                  <option value="summary">تقرير إحصائي شامل للحالات المسجلة</option>
+                  <option value="studentDossier">ملف تقرير مفرد لطالب محدد</option>
+                  <option value="urgentOnly">تقرير الحالات الحرجة والعاجلة</option>
+                </select>
+              </div>
+              <div class="form-group" id="reportStudentSelectWrapper" style="display:none;">
+                <label>اختر الطالب المعني بالتقرير:</label>
+                <select id="reportStudentSelect" class="form-control" onchange="generateReportView()">
+                  <!-- Dynamically populated -->
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Official Printable Paper -->
+        <div class="printable-report" id="printableReportCard">
+          <div class="report-school-header">
+            <div>
+              <h2 id="reportSchoolNameDisplay" style="font-size:1.25rem; color:var(--primary);">اسم المدرسة</h2>
+              <p style="font-size:0.82rem; color:var(--text-muted);">قسم التوجيه الطلابي والرعاية الاجتماعية</p>
+              <p style="font-size:0.75rem; color:var(--text-muted);" id="reportDateBadge">التاريخ: --/--/----</p>
+            </div>
+            <div style="text-align:center;">
+              <i class="fa-solid fa-award" style="font-size:2.5rem; color:var(--primary);"></i>
+              <div style="font-weight:700; font-size:0.8rem;">المملكة العربية السعودية / وزارة التعليم</div>
+            </div>
+            <div style="text-align:left;">
+              <span class="badge badge-urgent" style="font-size:0.75rem;">سري ومحمي</span>
+            </div>
+          </div>
+
+          <div id="reportDynamicContent">
+            <!-- Dynamic report content -->
+          </div>
+
+          <div style="margin-top:40px; display:flex; justify-content:space-between; padding-top:16px; border-top:1px dashed var(--border);">
+            <div style="text-align:center;">
+              <p style="font-weight:700; font-size:0.85rem;">الأخصائي الاجتماعي المكلف</p>
+              <p style="margin-top:30px; color:var(--text-muted); font-size:0.85rem;" id="repCounselorSign">الأخصائي</p>
+            </div>
+            <div style="text-align:center;">
+              <p style="font-weight:700; font-size:0.85rem;">مدير المدرسة</p>
+              <p style="margin-top:30px; color:var(--text-muted); font-size:0.85rem;" id="repPrincipalSign">المدير</p>
+            </div>
+            <div style="text-align:center;">
+              <p style="font-weight:700; font-size:0.85rem;">الختم الرسمي</p>
+              <div style="width:70px; height:70px; border:2px dashed #94a3b8; border-radius:50%; margin:6px auto; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:0.7rem;">
+                الختم
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Section 6: Settings ================= -->
+      <section id="sec-settings" class="view-section">
+        <div class="panel">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-school"></i> تخصيص بيانات المدرسة وبيئة العمل</h3>
+          </div>
+          <div class="panel-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>اسم المدرسة:</label>
+                <input type="text" id="setSchoolName" class="form-control" placeholder="مثال: مدرسة الأمل الثانوية">
+              </div>
+              <div class="form-group">
+                <label>اسم الأخصائي الاجتماعي:</label>
+                <input type="text" id="setCounselorName" class="form-control" placeholder="اسمك الكريم">
+              </div>
+              <div class="form-group">
+                <label>اسم مدير المدرسة:</label>
+                <input type="text" id="setPrincipalName" class="form-control" placeholder="اسم المدير">
+              </div>
+            </div>
+            <button class="btn btn-accent" onclick="saveSchoolMetadata()">
+              <i class="fa-solid fa-check"></i> حفظ الإعدادات المدرسية
+            </button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-database"></i> حالة المزامنة وقاعدة البيانات</h3>
+          </div>
+          <div class="panel-body">
+            <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.6; margin-bottom:12px;">
+              يتم حفظ جميع المدخلات محلياً على جهازك بشكل فوري. كما تم دمج كود الاتصال بـ <b>Firebase Firestore</b> مباشرة داخل السكربت. عند وضع مفاتيح مشروعك في الكود البرمجي (في كائن <code>firebaseConfig</code>) ستتم المزامنة السحابية تلقائياً.
+            </p>
+            <button class="btn btn-outline btn-sm" onclick="openRulesModal()">
+              <i class="fa-solid fa-shield-halved"></i> عرض قواعد الأمان (Firestore Rules)
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- 1. Student Modal (Add/Edit) -->
+  <div class="modal-overlay" id="studentModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="studentModalTitle">إضافة بيانات طالب جديد</h3>
+        <button class="modal-close-btn" onclick="closeStudentModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="studentForm" onsubmit="handleStudentFormSubmit(event)">
+          <input type="hidden" id="studentEditInternalId">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="studentIdInput">رقم الطالب (الرقم الأكاديمي/الهوية) *</label>
+              <input type="text" id="studentIdInput" class="form-control" required placeholder="مثال: 10293847">
+            </div>
+            <div class="form-group">
+              <label for="studentNameInput">اسم الطالب الرباعي *</label>
+              <input type="text" id="studentNameInput" class="form-control" required placeholder="الاسم الكامل">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="studentGradeInput">الصف الدراسي *</label>
+              <select id="studentGradeInput" class="form-control" required>
+                <option value="">-- اختر الصف --</option>
+                <option value="الأول">الأول</option>
+                <option value="الثاني">الثاني</option>
+                <option value="الثالث">الثالث</option>
+                <option value="الرابع">الرابع</option>
+                <option value="الخامس">الخامس</option>
+                <option value="السادس">السادس</option>
+                <option value="السابع">السابع</option>
+                <option value="الثامن">الثامن</option>
+                <option value="التاسع">التاسع</option>
+                <option value="العاشر">العاشر</option>
+                <option value="الحادي عشر">الحادي عشر</option>
+                <option value="الثاني عشر">الثاني عشر</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="studentPhoneInput">رقم هاتف ولي الأمر (واتساب) *</label>
+              <input type="tel" id="studentPhoneInput" class="form-control" required placeholder="96650xxxxxxx">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="studentFamilyInput">الوضع الأسري للطالب *</label>
+            <select id="studentFamilyInput" class="form-control" required>
+              <option value="مستقرة">مستقرة</option>
+              <option value="منفصلين (طلاق)">منفصلين (طلاق)</option>
+              <option value="يتيم الأب">يتيم الأب</option>
+              <option value="يتيم الأم">يتيم الأم</option>
+              <option value="يتيم الأبوين">يتيم الأبوين</option>
+              <option value="ذوي الدخل المحدود">ذوي الدخل المحدود</option>
+              <option value="أخرى">أخرى</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="studentNotesInput">ملاحظات عامة عن الطالب:</label>
+            <textarea id="studentNotesInput" class="form-control" placeholder="أي تفاصيل صحية أو اجتماعية أو بيئية..."></textarea>
+          </div>
+
+          <div class="modal-footer" style="padding-left:0; padding-right:0;">
+            <button type="button" class="btn btn-outline" onclick="closeStudentModal()">إلغاء</button>
+            <button type="submit" class="btn btn-primary">حفظ بيانات الطالب</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Excel Import Preview Modal -->
+  <div class="modal-overlay" id="excelPreviewModal">
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h3>معاينة بيانات ملف Excel قبل الحفظ</h3>
+        <button class="modal-close-btn" onclick="closeExcelPreviewModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px;">
+          يتم فحص أرقام الطلاب وتجاوز المكرر منها آلياً. الأعمدة المتوقعة: (رقم الطالب، الاسم، الصف، هاتف ولي الأمر، حالة الأسرة).
+        </p>
+        <div class="table-responsive" style="max-height: 280px;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>رقم الطالب</th>
+                <th>الاسم</th>
+                <th>الصف</th>
+                <th>الهاتف</th>
+                <th>حالة الأسرة</th>
+                <th>حالة الفحص</th>
+              </tr>
+            </thead>
+            <tbody id="excelPreviewTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeExcelPreviewModal()">إلغاء</button>
+        <button class="btn btn-accent" id="confirmExcelImportBtn" onclick="commitExcelImport()">تأكيد واستيراد الطلاب</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Case Details & Creation Modal -->
+  <div class="modal-overlay" id="caseModal">
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h3 id="caseModalTitle">تسجيل ملف حالة اجتماعية / سلوكية</h3>
+        <button class="modal-close-btn" onclick="closeCaseModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="caseForm" onsubmit="handleCaseFormSubmit(event)">
+          <input type="hidden" id="caseEditInternalId">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="caseStudentSelect">اختيار الطالب المعني بالحالة *</label>
+              <select id="caseStudentSelect" class="form-control" required>
+                <option value="">-- ابحث وحدد الطالب --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="caseTypeSelect">نوع وتصنيف الحالة *</label>
+              <select id="caseTypeSelect" class="form-control" required>
+                <option value="اجتماعية">اجتماعية (أسرية / اقتصادية)</option>
+                <option value="سلوكية">سلوكية (انضباط / تنمر / عدوانية)</option>
+                <option value="نفسية">نفسية (انطواء / قلق / مخاوف)</option>
+                <option value="تعليمية">تعليمية (تراجع حاد / صعوبات)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="casePrioritySelect">درجة الأهمية والحرج *</label>
+              <select id="casePrioritySelect" class="form-control" required>
+                <option value="عادية">عادية</option>
+                <option value="متوسطة">متوسطة</option>
+                <option value="عاجلة">عاجلة / قصوى (تتطلب تدخل فوري)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="caseStatusSelect">مرحلة الحالة *</label>
+              <select id="caseStatusSelect" class="form-control" required>
+                <option value="جديدة">جديدة</option>
+                <option value="قيد المتابعة">قيد المتابعة المستمرة</option>
+                <option value="تمت المعالجة">تمت المعالجة</option>
+                <option value="مغلقة">مغلقة نهائياً</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="caseProblemDesc">توصيف المشكلة وأسباب فتح الحالة *</label>
+            <textarea id="caseProblemDesc" class="form-control" required placeholder="شرح مفصل للواقعة أو الظاهرة المسجلة..."></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="caseActionsTaken">الإجراءات والتدخلات المتخذة:</label>
+              <textarea id="caseActionsTaken" class="form-control" placeholder="جلسات الإرشاد الفردي، تواصل ولي الأمر، التوجيهات..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="caseRecommendations">التوصيات والخطوات المستقبلية:</label>
+              <textarea id="caseRecommendations" class="form-control" placeholder="التوصيات الموجهة للمعلمين أو الأسرة..."></textarea>
+            </div>
+          </div>
+
+          <!-- Timeline follow-ups (only when editing) -->
+          <div id="caseFollowupsSection" style="margin-top:16px; display:none;">
+            <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
+            <h4 style="font-size:0.9rem; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+              <i class="fa-solid fa-clock-rotate-left" style="color:var(--accent);"></i>
+              سجل المتابعات والجلسات الدورية
+            </h4>
+
+            <div style="background:#f8fafc; padding:12px; border-radius:8px; border:1px solid var(--border); margin-bottom:12px;">
+              <div class="form-group" style="margin-bottom:8px;">
+                <label style="font-size:0.78rem;">إضافة تدوين جلسة متابعة جديدة:</label>
+                <input type="text" id="newFollowupInput" class="form-control" placeholder="سجل نتيجة الجلسة أو الملاحظة الجديدة...">
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" onclick="addFollowupEntryToCurrentCase()">
+                <i class="fa-solid fa-plus"></i> تدوين المتابعة
+              </button>
+            </div>
+
+            <div class="timeline" id="caseFollowupsTimeline">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding-left:0; padding-right:0;">
+            <button type="button" class="btn btn-outline" onclick="closeCaseModal()">إلغاء</button>
+            <button type="submit" class="btn btn-accent">حفظ ملف الحالة</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Security Rules Modal -->
+  <div class="modal-overlay" id="rulesModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>قواعد أمان Firebase Firestore المقترحة</h3>
+        <button class="modal-close-btn" onclick="closeRulesModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">
+          انسخ هذه القواعد إلى تبويب Rules في لوحة تحكم Firebase لحماية بيانات الطلاب وسرية الحالات:
+        </p>
+        <pre style="background:#1e293b; color:#38bdf8; padding:12px; border-radius:8px; font-size:0.72rem; direction:ltr; overflow-x:auto;">
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /students/{studentId} {
+      allow read, write: if request.auth != null;
+    }
+    match /cases/{caseId} {
+      allow read, write: if request.auth != null;
+    }
+    match /settings/{docId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+        </pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" onclick="closeRulesModal()">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="toast">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toastMessage">تم تنفيذ العملية بنجاح!</span>
+  </div>
+
+  <!-- ================= JAVASCRIPT ================= -->
+  <script>
+    /* =====================================================================
+       1. FIREBASE CONFIGURATION (مدمجة مباشرة في الكود)
+       ===================================================================== */
+    // استبدل القيم التالية بمفاتيح مشروعك الفعلي على Google Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDy1zvNzFA0rZLXW0k_u-_Sx_LVGGy6OPg",
+      authDomain: "slooki-9c0a2.firebaseapp.com",
+      databaseURL: "https://slooki-9c0a2-default-rtdb.firebaseio.com",
+      projectId: "slooki-9c0a2",
+      storageBucket: "slooki-9c0a2.firebasestorage.app",
+      messagingSenderId: "984353878829",
+      appId: "1:984353878829:web:fd76d8877bb4a802e719a4"
+      
+    };
+
+
+    let firestoreDB = null;
+    let isFirebaseActive = false;
+
+    // تهيئة Firebase التلقائية
+    function initFirebase() {
+      if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY_HERE") {
+        try {
+          if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+          }
+          firestoreDB = firebase.firestore();
+          isFirebaseActive = true;
+          setConnectionStatus(true);
+          listenToFirestoreUpdates();
+        } catch (err) {
+          console.warn("تعذر الاتصال بـ Firebase، جاري العمل في وضع التخزين المحلي:", err);
+          setConnectionStatus(false);
+        }
+      } else {
+        setConnectionStatus(false);
+      }
+    }
+
+    function setConnectionStatus(connected) {
+      const badge = document.getElementById('connectionStatusBadge');
+      const text = document.getElementById('connectionStatusText');
+      if (connected) {
+        badge.className = "connection-badge connected";
+        text.innerText = "سحابي (Firebase متصل)";
+      } else {
+        badge.className = "connection-badge";
+        text.innerText = "تخزين المتصفح الآمن";
+      }
+    }
+
+    /* =====================================================================
+       2. DATA INITIALIZATION (بيانات تبدأ فارغة تماماً بدون أي بيانات ثابتة)
+       ===================================================================== */
+    let studentsDB = JSON.parse(localStorage.getItem('SW_APP_STUDENTS')) || [];
+    let casesDB = JSON.parse(localStorage.getItem('SW_APP_CASES')) || [];
+    let schoolMetadata = JSON.parse(localStorage.getItem('SW_APP_SCHOOL')) || {
+      name: '',
+      counselor: '',
+      principal: '',
+      role: 'الأخصائي الاجتماعي'
+    };
+
+    let pendingExcelImportData = [];
+    let caseChartInstance = null;
+    let statusChartInstance = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initFirebase();
+      initNavigation();
+      updateSchoolMetadataUI();
+      renderDashboard();
+      renderStudentsTable();
+      renderCasesTable();
+      populateStudentSelects();
+      initCharts();
+    });
+
+    function saveAppData() {
+      localStorage.setItem('SW_APP_STUDENTS', JSON.stringify(studentsDB));
+      localStorage.setItem('SW_APP_CASES', JSON.stringify(casesDB));
+      localStorage.setItem('SW_APP_SCHOOL', JSON.stringify(schoolMetadata));
+
+      if (isFirebaseActive && firestoreDB) {
+        // Realtime write to Firestore
+        syncBatchToFirestore('students', studentsDB);
+        syncBatchToFirestore('cases', casesDB);
+        firestoreDB.collection('settings').doc('school').set(schoolMetadata, { merge: true }).catch(console.error);
+      }
+    }
+
+    function syncBatchToFirestore(collectionName, items) {
+      if (!firestoreDB) return;
+      items.forEach(item => {
+        firestoreDB.collection(collectionName).doc(item.id).set(item, { merge: true })
+          .catch(e => console.error("Firebase sync error:", e));
+      });
+    }
+
+    function listenToFirestoreUpdates() {
+      if (!firestoreDB) return;
+      // Real-time synchronization listeners
+      firestoreDB.collection('students').onSnapshot(snapshot => {
+        if (!snapshot.empty) {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          studentsDB = list;
+          localStorage.setItem('SW_APP_STUDENTS', JSON.stringify(studentsDB));
+          renderStudentsTable();
+          populateStudentSelects();
+          refreshDashboardCharts();
+        }
+      }, err => console.log("Students listener:", err));
+
+      firestoreDB.collection('cases').onSnapshot(snapshot => {
+        if (!snapshot.empty) {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          casesDB = list;
+          localStorage.setItem('SW_APP_CASES', JSON.stringify(casesDB));
+          renderCasesTable();
+          renderDashboard();
+          refreshDashboardCharts();
+        }
+      }, err => console.log("Cases listener:", err));
+    }
+
+    /* =====================================================================
+       3. RESPONSIVE SIDEBAR & NAVIGATION (إصلاح القائمة والتجاوب بالكامل)
+       ===================================================================== */
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      sidebar.classList.toggle('open');
+      backdrop.classList.toggle('active');
+    }
+
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebarBackdrop').classList.remove('active');
+    }
+
+    function initNavigation() {
+      const navLinks = document.querySelectorAll('.sidebar-menu a.nav-link');
+      navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          navLinks.forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+
+          const targetId = link.getAttribute('data-target');
+          document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+          const targetSection = document.getElementById(targetId);
+          if (targetSection) targetSection.classList.add('active');
+
+          const linkText = link.querySelector('span').innerText;
+          const linkIconClass = link.querySelector('i').className;
+          document.getElementById('pageTitleHeading').innerHTML = `<i class="${linkIconClass}" style="color:var(--accent);"></i> <span>${linkText}</span>`;
+
+          // Close sidebar on mobile upon navigation
+          closeSidebar();
+
+          if (targetId === 'sec-dashboard') refreshDashboardCharts();
+          if (targetId === 'sec-reports') generateReportView();
+        });
+      });
+
+      // Close on Esc key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeSidebar();
+          closeStudentModal();
+          closeCaseModal();
+          closeExcelPreviewModal();
+          closeRulesModal();
+        }
+      });
+    }
+
+    /* =====================================================================
+       4. DASHBOARD & CHARTS
+       ===================================================================== */
+    function renderDashboard() {
+      const totalStudents = studentsDB.length;
+      const totalCases = casesDB.length;
+      const followupCases = casesDB.filter(c => c.status === 'قيد المتابعة').length;
+      const urgentCases = casesDB.filter(c => c.priority === 'عاجلة' && c.status !== 'مغلقة').length;
+      const resolvedCases = casesDB.filter(c => c.status === 'تمت المعالجة' || c.status === 'مغلقة').length;
+
+      document.getElementById('statTotalStudents').innerText = totalStudents;
+      document.getElementById('statTotalCases').innerText = totalCases;
+      document.getElementById('statFollowupCases').innerText = followupCases;
+      document.getElementById('statUrgentCases').innerText = urgentCases;
+      document.getElementById('statResolvedCases').innerText = resolvedCases;
+
+      // Urgent cases table
+      const tbody = document.getElementById('urgentCasesTableBody');
+      tbody.innerHTML = '';
+      const activeUrgentList = casesDB.filter(c => c.priority === 'عاجلة' && c.status !== 'مغلقة');
+
+      if (activeUrgentList.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty-state-box">
+                <i class="fa-solid fa-circle-check" style="color:#10b981;"></i>
+                <h4>لا توجد حالات عاجلة تحتاج لتدخل حالياً</h4>
+                <p>جميع الحالات مستقرة أو لم تسجل حالات حرجة بعد.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+      } else {
+        activeUrgentList.forEach(item => {
+          const student = studentsDB.find(s => s.studentId === item.studentId) || {};
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><b>${item.studentId}</b></td>
+            <td>${item.studentName}</td>
+            <td>${item.grade || '-'}</td>
+            <td><span class="badge" style="background:#f1f5f9;">${item.type}</span></td>
+            <td><span class="badge badge-urgent"><i class="fa-solid fa-triangle-exclamation"></i> عاجلة</span></td>
+            <td>${item.createdAt}</td>
+            <td>
+              <button class="btn btn-whatsapp btn-sm" onclick="quickWhatsAppContact('${student.parentPhone || ''}', '${item.studentName}')" title="واتساب ولي الأمر">
+                <i class="fa-brands fa-whatsapp"></i>
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="openEditCaseModal('${item.id}')">
+                <i class="fa-solid fa-folder-open"></i> تفاصيل
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    function initCharts() {
+      const ctxTypes = document.getElementById('caseTypeChart').getContext('2d');
+      const countsByType = [
+        casesDB.filter(c => c.type === 'اجتماعية').length,
+        casesDB.filter(c => c.type === 'سلوكية').length,
+        casesDB.filter(c => c.type === 'نفسية').length,
+        casesDB.filter(c => c.type === 'تعليمية').length
+      ];
+
+      caseChartInstance = new Chart(ctxTypes, {
+        type: 'bar',
+        data: {
+          labels: ['اجتماعية', 'سلوكية', 'نفسية', 'تعليمية'],
+          datasets: [{
+            label: 'عدد الحالات',
+            data: countsByType,
+            backgroundColor: ['#0d9488', '#3b82f6', '#f59e0b', '#8b5cf6'],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+      });
+
+      const ctxStatus = document.getElementById('caseStatusChart').getContext('2d');
+      const countsByStatus = [
+        casesDB.filter(c => c.status === 'جديدة').length,
+        casesDB.filter(c => c.status === 'قيد المتابعة').length,
+        casesDB.filter(c => c.status === 'تمت المعالجة').length,
+        casesDB.filter(c => c.status === 'مغلقة').length
+      ];
+
+      statusChartInstance = new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+          labels: ['جديدة', 'قيد المتابعة', 'تمت المعالجة', 'مغلقة'],
+          datasets: [{
+            data: countsByStatus.every(v => v === 0) ? [1] : countsByStatus,
+            backgroundColor: countsByStatus.every(v => v === 0) ? ['#e2e8f0'] : ['#6366f1', '#f59e0b', '#10b981', '#94a3b8'],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+    }
+
+    function refreshDashboardCharts() {
+      if (!caseChartInstance || !statusChartInstance) return;
+
+      const countsByType = [
+        casesDB.filter(c => c.type === 'اجتماعية').length,
+        casesDB.filter(c => c.type === 'سلوكية').length,
+        casesDB.filter(c => c.type === 'نفسية').length,
+        casesDB.filter(c => c.type === 'تعليمية').length
+      ];
+
+      const countsByStatus = [
+        casesDB.filter(c => c.status === 'جديدة').length,
+        casesDB.filter(c => c.status === 'قيد المتابعة').length,
+        casesDB.filter(c => c.status === 'تمت المعالجة').length,
+        casesDB.filter(c => c.status === 'مغلقة').length
+      ];
+
+      caseChartInstance.data.datasets[0].data = countsByType;
+      caseChartInstance.update();
+
+      if (countsByStatus.every(v => v === 0)) {
+        statusChartInstance.data.datasets[0].data = [1];
+        statusChartInstance.data.datasets[0].backgroundColor = ['#e2e8f0'];
+      } else {
+        statusChartInstance.data.datasets[0].data = countsByStatus;
+        statusChartInstance.data.datasets[0].backgroundColor = ['#6366f1', '#f59e0b', '#10b981', '#94a3b8'];
+      }
+      statusChartInstance.update();
+
+      renderDashboard();
+    }
+
+    /* =====================================================================
+       5. STUDENT MANAGEMENT (CRUD & EXCEL)
+       ===================================================================== */
+    function renderStudentsTable(filterList = null) {
+      const tbody = document.getElementById('studentsTableBody');
+      tbody.innerHTML = '';
+      const list = filterList !== null ? filterList : studentsDB;
+
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty-state-box">
+                <i class="fa-solid fa-user-graduate"></i>
+                <h4>لا توجد بيانات طلاب مسجلة</h4>
+                <p>ابدأ بإضافة أول طالب أو استيراد ملف الطلاب من خلال زر الإضافة بأعلى الجدول.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      list.forEach(st => {
+        const studentActiveCases = casesDB.filter(c => c.studentId === st.studentId && c.status !== 'مغلقة').length;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>${st.studentId}</b></td>
+          <td>
+            <div style="font-weight:700;">${st.name}</div>
+            <div style="font-size:0.73rem; color:var(--text-muted);">${st.notes || ''}</div>
+          </td>
+          <td><span class="badge" style="background:#e0f2fe; color:#0369a1;">الصف ${st.grade}</span></td>
+          <td dir="ltr" style="text-align:right;">${st.parentPhone}</td>
+          <td><span class="badge" style="background:#f1f5f9; color:var(--text-main);">${st.familyStatus}</span></td>
+          <td>
+            ${studentActiveCases > 0 
+              ? `<span class="badge badge-medium">${studentActiveCases} حالة نشطة</span>` 
+              : `<span class="badge badge-resolved">سليم</span>`}
+          </td>
+          <td>
+            <div style="display:flex; gap:5px;">
+              <button class="btn btn-whatsapp btn-sm" onclick="quickWhatsAppContact('${st.parentPhone}', '${st.name}')" title="مراسلة واتساب">
+                <i class="fa-brands fa-whatsapp"></i>
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="openStudentModal('${st.id}')" title="تعديل">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteStudent('${st.id}')" title="حذف">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterStudentsTable() {
+      const term = document.getElementById('studentSearchInput').value.trim().toLowerCase();
+      const grade = document.getElementById('studentGradeFilter').value;
+      const family = document.getElementById('studentFamilyFilter').value;
+
+      const filtered = studentsDB.filter(st => {
+        const matchesTerm = st.name.toLowerCase().includes(term) || st.studentId.includes(term) || st.parentPhone.includes(term);
+        const matchesGrade = grade ? st.grade === grade : true;
+        const matchesFamily = family ? st.familyStatus === family : true;
+        return matchesTerm && matchesGrade && matchesFamily;
+      });
+
+      renderStudentsTable(filtered);
+    }
+
+    function openStudentModal(editId = null) {
+      const modal = document.getElementById('studentModal');
+      const form = document.getElementById('studentForm');
+      form.reset();
+
+      if (editId) {
+        document.getElementById('studentModalTitle').innerText = 'تعديل بيانات الطالب';
+        const st = studentsDB.find(s => s.id === editId);
+        if (st) {
+          document.getElementById('studentEditInternalId').value = st.id;
+          document.getElementById('studentIdInput').value = st.studentId;
+          document.getElementById('studentNameInput').value = st.name;
+          document.getElementById('studentGradeInput').value = st.grade;
+          document.getElementById('studentPhoneInput').value = st.parentPhone;
+          document.getElementById('studentFamilyInput').value = st.familyStatus;
+          document.getElementById('studentNotesInput').value = st.notes || '';
+        }
+      } else {
+        document.getElementById('studentModalTitle').innerText = 'إضافة بيانات طالب جديد';
+        document.getElementById('studentEditInternalId').value = '';
+      }
+      modal.classList.add('active');
+    }
+
+    function closeStudentModal() {
+      document.getElementById('studentModal').classList.remove('active');
+    }
+
+    function handleStudentFormSubmit(e) {
+      e.preventDefault();
+      const internalId = document.getElementById('studentEditInternalId').value;
+      const studentId = document.getElementById('studentIdInput').value.trim();
+      const name = document.getElementById('studentNameInput').value.trim();
+      const grade = document.getElementById('studentGradeInput').value;
+      const phone = document.getElementById('studentPhoneInput').value.trim();
+      const familyStatus = document.getElementById('studentFamilyInput').value;
+      const notes = document.getElementById('studentNotesInput').value.trim();
+
+      // Check duplicates
+      const existing = studentsDB.find(s => s.studentId === studentId && s.id !== internalId);
+      if (existing) {
+        showToast('رقم الطالب مسجل مسبقاً باسم: ' + existing.name, 'error');
+        return;
+      }
+
+      if (internalId) {
+        const index = studentsDB.findIndex(s => s.id === internalId);
+        if (index !== -1) {
+          studentsDB[index] = { ...studentsDB[index], studentId, name, grade, parentPhone: phone, familyStatus, notes };
+          showToast('تم تحديث بيانات الطالب بنجاح', 'success');
+        }
+      } else {
+        const newStudent = {
+          id: 'st_' + Date.now(),
+          studentId,
+          name,
+          grade,
+          parentPhone: phone,
+          familyStatus,
+          notes,
+          createdAt: new Date().toISOString().split('T')[0]
+        };
+        studentsDB.push(newStudent);
+        showToast('تم تسجيل الطالب بنجاح', 'success');
+      }
+
+      saveAppData();
+      closeStudentModal();
+      renderStudentsTable();
+      populateStudentSelects();
+      refreshDashboardCharts();
+    }
+
+    function deleteStudent(id) {
+      const student = studentsDB.find(s => s.id === id);
+      if (!student) return;
+
+      if (confirm(`هل أنت متأكد من حذف الطالب (${student.name}) وكافة ملفات حالاته؟`)) {
+        studentsDB = studentsDB.filter(s => s.id !== id);
+        casesDB = casesDB.filter(c => c.studentId !== student.studentId);
+        saveAppData();
+
+        if (isFirebaseActive && firestoreDB) {
+          firestoreDB.collection('students').doc(id).delete().catch(console.error);
+        }
+
+        renderStudentsTable();
+        renderCasesTable();
+        populateStudentSelects();
+        refreshDashboardCharts();
+        showToast('تم حذف الطالب بنجاح', 'info');
+      }
+    }
+
+    /* Excel Import/Export */
+    function triggerExcelFileInput() {
+      document.getElementById('excelFileInput').click();
+    }
+
+    function handleExcelImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+          if (jsonData.length < 2) {
+            showToast('الملف فارغ أو لا يحتوي على صفوف صالحة.', 'error');
+            return;
+          }
+
+          pendingExcelImportData = [];
+          const previewTbody = document.getElementById('excelPreviewTableBody');
+          previewTbody.innerHTML = '';
+
+          for (let i = 1; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (!row || row.length === 0) continue;
+
+            const stId = String(row[0] || '').trim();
+            const name = String(row[1] || '').trim();
+            const grade = String(row[2] || '').trim();
+            const phone = String(row[3] || '').trim();
+            const family = String(row[4] || 'مستقرة').trim();
+
+            if (!stId || !name) continue;
+
+            const isDuplicate = studentsDB.some(s => s.studentId === stId);
+            const statusBadge = isDuplicate 
+              ? `<span class="badge badge-urgent"><i class="fa-solid fa-ban"></i> مكرر</span>` 
+              : `<span class="badge badge-resolved"><i class="fa-solid fa-check"></i> جاهز</span>`;
+
+            pendingExcelImportData.push({
+              studentId: stId,
+              name: name,
+              grade: grade || 'الأول',
+              parentPhone: phone || '',
+              familyStatus: family,
+              isDuplicate: isDuplicate
+            });
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${stId}</td>
+              <td>${name}</td>
+              <td>${grade}</td>
+              <td>${phone}</td>
+              <td>${family}</td>
+              <td>${statusBadge}</td>
+            `;
+            previewTbody.appendChild(tr);
+          }
+
+          document.getElementById('excelPreviewModal').classList.add('active');
+        } catch (err) {
+          console.error(err);
+          showToast('حدث خطأ أثناء قراءة ملف Excel.', 'error');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      event.target.value = '';
+    }
+
+    function closeExcelPreviewModal() {
+      document.getElementById('excelPreviewModal').classList.remove('active');
+      pendingExcelImportData = [];
+    }
+
+    function commitExcelImport() {
+      const validRows = pendingExcelImportData.filter(r => !r.isDuplicate);
+      if (validRows.length === 0) {
+        showToast('لا توجد سجلات جديدة قابلة للاستيراد.', 'error');
+        closeExcelPreviewModal();
+        return;
+      }
+
+      validRows.forEach(item => {
+        studentsDB.push({
+          id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          studentId: item.studentId,
+          name: item.name,
+          grade: item.grade,
+          parentPhone: item.parentPhone,
+          familyStatus: item.familyStatus,
+          notes: 'مستورد عبر Excel',
+          createdAt: new Date().toISOString().split('T')[0]
+        });
+      });
+
+      saveAppData();
+      closeExcelPreviewModal();
+      renderStudentsTable();
+      populateStudentSelects();
+      refreshDashboardCharts();
+      showToast(`تم استيراد ${validRows.length} طالباً بنجاح!`, 'success');
+    }
+
+    function exportStudentsToExcel() {
+      if (studentsDB.length === 0) {
+        showToast('لا توجد بيانات طلاب للتصدير حتى الآن', 'info');
+        return;
+      }
+      const worksheetData = [
+        ['رقم الطالب', 'اسم الطالب', 'الصف الدراسي', 'هاتف ولي الأمر', 'الوضع الأسري', 'ملاحظات', 'تاريخ التسجيل']
+      ];
+      studentsDB.forEach(s => {
+        worksheetData.push([s.studentId, s.name, s.grade, s.parentPhone, s.familyStatus, s.notes || '', s.createdAt]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "سجل الطلاب");
+      XLSX.writeFile(wb, `سجل_الطلاب_${new Date().toISOString().split('T')[0]}.xlsx`);
+      showToast('تم تصدير ملف Excel بنجاح', 'success');
+    }
+
+    /* =====================================================================
+       6. CASE MANAGEMENT
+       ===================================================================== */
+    function renderCasesTable(filterList = null) {
+      const tbody = document.getElementById('casesTableBody');
+      tbody.innerHTML = '';
+      const list = filterList !== null ? filterList : casesDB;
+
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9">
+              <div class="empty-state-box">
+                <i class="fa-solid fa-folder-tree"></i>
+                <h4>لا توجد حالات اجتماعية أو سلوكية مسجلة</h4>
+                <p>سجل الحالات نظيف تماماً. يمكنك فتح ملف حالة جديد عند الحاجة.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      list.forEach(c => {
+        let priorityBadge = '';
+        if (c.priority === 'عاجلة') priorityBadge = '<span class="badge badge-urgent"><i class="fa-solid fa-triangle-exclamation"></i> عاجلة</span>';
+        else if (c.priority === 'متوسطة') priorityBadge = '<span class="badge badge-medium">متوسطة</span>';
+        else priorityBadge = '<span class="badge badge-low">عادية</span>';
+
+        let statusBadge = '';
+        if (c.status === 'جديدة') statusBadge = '<span class="badge badge-new">جديدة</span>';
+        else if (c.status === 'قيد المتابعة') statusBadge = '<span class="badge badge-in-progress">قيد المتابعة</span>';
+        else if (c.status === 'تمت المعالجة') statusBadge = '<span class="badge badge-resolved">تمت المعالجة</span>';
+        else statusBadge = '<span class="badge badge-closed">مغلقة</span>';
+
+        const followupsCount = c.followUps ? c.followUps.length : 0;
+        const student = studentsDB.find(s => s.studentId === c.studentId);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>${c.id.substr(0, 8)}</b></td>
+          <td>
+            <div style="font-weight:700;">${c.studentName}</div>
+            <div style="font-size:0.73rem; color:var(--text-muted);">${c.studentId}</div>
+          </td>
+          <td>${c.grade || '-'}</td>
+          <td><span class="badge" style="background:#f8fafc; border:1px solid var(--border);">${c.type}</span></td>
+          <td>${priorityBadge}</td>
+          <td>${c.createdAt}</td>
+          <td>${statusBadge}</td>
+          <td><span class="badge" style="background:#f1f5f9;">${followupsCount} جلسة</span></td>
+          <td>
+            <div style="display:flex; gap:5px;">
+              <button class="btn btn-whatsapp btn-sm" onclick="quickWhatsAppContact('${student ? student.parentPhone : ''}', '${c.studentName}')" title="مراسلة ولي الأمر">
+                <i class="fa-brands fa-whatsapp"></i>
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="openEditCaseModal('${c.id}')" title="فتح ومتابعة الملف">
+                <i class="fa-solid fa-folder-open"></i>
+              </button>
+              <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteCase('${c.id}')" title="حذف الملف">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterCasesTable() {
+      const term = document.getElementById('caseSearchInput').value.trim().toLowerCase();
+      const type = document.getElementById('caseTypeFilter').value;
+      const priority = document.getElementById('casePriorityFilter').value;
+      const status = document.getElementById('caseStatusFilter').value;
+
+      const filtered = casesDB.filter(c => {
+        const matchesTerm = c.studentName.toLowerCase().includes(term) || c.studentId.includes(term) || c.problemDesc.toLowerCase().includes(term);
+        const matchesType = type ? c.type === type : true;
+        const matchesPriority = priority ? c.priority === priority : true;
+        const matchesStatus = status ? c.status === status : true;
+        return matchesTerm && matchesType && matchesPriority && matchesStatus;
+      });
+
+      renderCasesTable(filtered);
+    }
+
+    function openNewCaseModal(preSelectedStudentId = null) {
+      if (studentsDB.length === 0) {
+        showToast('يرجى تسجيل طالب واحد على الأقل أولاً لربط الحالة به', 'error');
+        return;
+      }
+
+      const modal = document.getElementById('caseModal');
+      const form = document.getElementById('caseForm');
+      form.reset();
+      document.getElementById('caseModalTitle').innerText = 'تسجيل ملف حالة اجتماعية / سلوكية جديدة';
+      document.getElementById('caseEditInternalId').value = '';
+      document.getElementById('caseFollowupsSection').style.display = 'none';
+
+      populateStudentSelects();
+      if (preSelectedStudentId) {
+        document.getElementById('caseStudentSelect').value = preSelectedStudentId;
+      }
+      modal.classList.add('active');
+    }
+
+    function openEditCaseModal(caseId) {
+      const item = casesDB.find(c => c.id === caseId);
+      if (!item) return;
+
+      populateStudentSelects();
+      document.getElementById('caseModalTitle').innerText = `ملف حالة الطالب: ${item.studentName}`;
+      document.getElementById('caseEditInternalId').value = item.id;
+      document.getElementById('caseStudentSelect').value = item.studentId;
+      document.getElementById('caseTypeSelect').value = item.type;
+      document.getElementById('casePrioritySelect').value = item.priority;
+      document.getElementById('caseStatusSelect').value = item.status;
+      document.getElementById('caseProblemDesc').value = item.problemDesc;
+      document.getElementById('caseActionsTaken').value = item.actionsTaken || '';
+      document.getElementById('caseRecommendations').value = item.recommendations || '';
+
+      document.getElementById('caseFollowupsSection').style.display = 'block';
+      renderCaseTimeline(item);
+
+      document.getElementById('caseModal').classList.add('active');
+    }
+
+    function renderCaseTimeline(caseObj) {
+      const timelineBox = document.getElementById('caseFollowupsTimeline');
+      timelineBox.innerHTML = '';
+
+      if (!caseObj.followUps || caseObj.followUps.length === 0) {
+        timelineBox.innerHTML = '<p style="font-size:0.78rem; color:var(--text-muted);">لا توجد جلسات متابعة مدونة حتى الآن.</p>';
+        return;
+      }
+
+      caseObj.followUps.forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'timeline-item';
+        div.innerHTML = `
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span><b>${f.counselor || 'الأخصائي الاجتماعي'}</b></span>
+              <span><i class="fa-regular fa-clock"></i> ${f.date}</span>
+            </div>
+            <div style="font-size:0.82rem;">${f.note}</div>
+          </div>
+        `;
+        timelineBox.appendChild(div);
+      });
+    }
+
+    function addFollowupEntryToCurrentCase() {
+      const currentCaseId = document.getElementById('caseEditInternalId').value;
+      const noteInput = document.getElementById('newFollowupInput');
+      const noteText = noteInput.value.trim();
+
+      if (!noteText) {
+        showToast('يرجى كتابة الملاحظة قبل الحفظ', 'error');
+        return;
+      }
+
+      const caseIndex = casesDB.findIndex(c => c.id === currentCaseId);
+      if (caseIndex !== -1) {
+        if (!casesDB[caseIndex].followUps) casesDB[caseIndex].followUps = [];
+        casesDB[caseIndex].followUps.push({
+          date: new Date().toISOString().split('T')[0] + ' ' + new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+          note: noteText,
+          counselor: schoolMetadata.counselor || 'الأخصائي الاجتماعي'
+        });
+        noteInput.value = '';
+        saveAppData();
+        renderCaseTimeline(casesDB[caseIndex]);
+        renderCasesTable();
+        showToast('تمت إضافة الجلسة إلى السجل بنجاح', 'success');
+      }
+    }
+
+    function closeCaseModal() {
+      document.getElementById('caseModal').classList.remove('active');
+    }
+
+    function handleCaseFormSubmit(e) {
+      e.preventDefault();
+      const internalId = document.getElementById('caseEditInternalId').value;
+      const studentId = document.getElementById('caseStudentSelect').value;
+      const type = document.getElementById('caseTypeSelect').value;
+      const priority = document.getElementById('casePrioritySelect').value;
+      const status = document.getElementById('caseStatusSelect').value;
+      const problemDesc = document.getElementById('caseProblemDesc').value.trim();
+      const actionsTaken = document.getElementById('caseActionsTaken').value.trim();
+      const recommendations = document.getElementById('caseRecommendations').value.trim();
+
+      const studentObj = studentsDB.find(s => s.studentId === studentId);
+      if (!studentObj) {
+        showToast('يرجى تحديد الطالب المعني بالحالة', 'error');
+        return;
+      }
+
+      if (internalId) {
+        const idx = casesDB.findIndex(c => c.id === internalId);
+        if (idx !== -1) {
+          casesDB[idx] = {
+            ...casesDB[idx],
+            studentId,
+            studentName: studentObj.name,
+            grade: studentObj.grade,
+            type,
+            priority,
+            status,
+            problemDesc,
+            actionsTaken,
+            recommendations
+          };
+          showToast('تم تعديل وحفظ ملف الحالة', 'success');
+        }
+      } else {
+        const newCase = {
+          id: 'case_' + Date.now(),
+          studentId,
+          studentName: studentObj.name,
+          grade: studentObj.grade,
+          type,
+          priority,
+          status,
+          problemDesc,
+          actionsTaken,
+          recommendations,
+          followUps: [],
+          createdAt: new Date().toISOString().split('T')[0]
+        };
+        casesDB.unshift(newCase);
+        showToast('تم تسجيل الحالة الجديدة بنجاح', 'success');
+      }
+
+      saveAppData();
+      closeCaseModal();
+      renderCasesTable();
+      renderDashboard();
+      refreshDashboardCharts();
+    }
+
+    function deleteCase(caseId) {
+      if (confirm('هل أنت متأكد من حذف هذا الملف ومتابعاته بالكامل؟')) {
+        casesDB = casesDB.filter(c => c.id !== caseId);
+        saveAppData();
+
+        if (isFirebaseActive && firestoreDB) {
+          firestoreDB.collection('cases').doc(caseId).delete().catch(console.error);
+        }
+
+        renderCasesTable();
+        renderDashboard();
+        refreshDashboardCharts();
+        showToast('تم حذف ملف الحالة بنجاح', 'info');
+      }
+    }
+
+    function populateStudentSelects() {
+      const caseSelect = document.getElementById('caseStudentSelect');
+      const waSelect = document.getElementById('waStudentSelect');
+      const repSelect = document.getElementById('reportStudentSelect');
+
+      if (studentsDB.length === 0) {
+        const emptyOption = `<option value="">-- لا يوجد طلاب مسجلون --</option>`;
+        if (caseSelect) caseSelect.innerHTML = emptyOption;
+        if (waSelect) waSelect.innerHTML = emptyOption;
+        if (repSelect) repSelect.innerHTML = emptyOption;
+        return;
+      }
+
+      const options = `<option value="">-- حدد الطالب --</option>` +
+        studentsDB.map(s => `<option value="${s.studentId}">${s.name} (${s.studentId} - ${s.grade})</option>`).join('');
+
+      if (caseSelect) caseSelect.innerHTML = options;
+      if (waSelect) waSelect.innerHTML = options;
+      if (repSelect) repSelect.innerHTML = options;
+    }
+
+    /* =====================================================================
+       7. WHATSAPP SYSTEM
+       ===================================================================== */
+    const waTemplates = {
+      attendance: 'السلام عليكم ورحمة الله،\nالمكرم ولي أمر الطالب {اسم_الطالب} (الصف {الصف}) المحترم.\nنفيدكم بتسجيل ملاحظة غياب/تأخر اليوم عن المدرسة. يرجى تزويد إدارة {اسم_المدرسة} بالعذر حرصاً على مستوى ابننا الدراسي.',
+      behavior: 'السلام عليكم ورحمة الله وبركاته،\nالمكرم ولي أمر الطالب {اسم_الطالب} المحترم،\nنرجو منكم التكرم بالتواصل مع الأخصائي الاجتماعي بمدرسة {اسم_المدرسة} لمناقشة أمر تربوي وسلوكي هام يصب في مصلحة الطالب.',
+      meeting: 'السلام عليكم ورحمة الله،\nالمكرم ولي أمر الطالب {اسم_الطالب} المحترم،\nيسر إدارة {اسم_المدرسة} وقسم التوجيه الطلابي دعوتكم لزيارة المدرسة لحضور جلسة تشاورية مع الأخصائي الاجتماعي.',
+      praise: 'السلام عليكم ورحمة الله وبركاته،\nالمكرم ولي أمر الطالب {اسم_الطالب} المحترم،\nيسر إدارة {اسم_المدرسة} تهنئتكم بالتحسن السلوكي والأكاديمي الملحوظ لابننا، ونشكر لكم حسن تعاونكم الدائم معنا.',
+      general: 'السلام عليكم ورحمة الله وبركاته،\nالمكرم ولي أمر الطالب {اسم_الطالب} المحترم،\nنرجو مراجعة التوجيه الطلابي بـ {اسم_المدرسة} للاطلاع على تقرير المتابعة الدورية.'
+    };
+
+    function applyWaTemplate(templateKey, e) {
+      document.querySelectorAll('.template-chip').forEach(c => c.classList.remove('active'));
+      if (e && e.target) e.target.classList.add('active');
+
+      document.getElementById('waMessageBody').value = waTemplates[templateKey] || '';
+      updateWaMessageLive();
+    }
+
+    function onWhatsAppStudentSelected() {
+      const studentId = document.getElementById('waStudentSelect').value;
+      const student = studentsDB.find(s => s.studentId === studentId);
+      if (student) {
+        document.getElementById('waPhoneInput').value = student.parentPhone || '';
+        updateWaMessageLive();
+      }
+    }
+
+    function updateWaMessageLive() {
+      const studentId = document.getElementById('waStudentSelect').value;
+      const student = studentsDB.find(s => s.studentId === studentId) || { name: '[اسم الطالب]', grade: '[الصف]' };
+      let body = document.getElementById('waMessageBody').value;
+
+      body = body.replace(/{اسم_الطالب}/g, student.name)
+                 .replace(/{الصف}/g, student.grade)
+                 .replace(/{اسم_المدرسة}/g, schoolMetadata.name || 'المدرسة');
+
+      document.getElementById('waLivePreviewBox').innerText = body || 'معاينة نص الرسالة...';
+    }
+
+    document.getElementById('waMessageBody').addEventListener('input', (e) => {
+      document.getElementById('waLivePreviewBox').innerText = e.target.value;
+    });
+
+    function sendWhatsAppDirect() {
+      let phone = document.getElementById('waPhoneInput').value.replace(/[^0-9]/g, '');
+      const msg = document.getElementById('waMessageBody').value.trim();
+
+      if (!phone) {
+        showToast('يرجى تحديد رقم الهاتف لولي الأمر', 'error');
+        return;
+      }
+      if (!msg) {
+        showToast('الرسالة فارغة، يرجى كتابة نص الرسالة', 'error');
+        return;
+      }
+
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+      showToast('جاري فتح محادثة WhatsApp...', 'info');
+    }
+
+    function quickWhatsAppContact(phone, studentName) {
+      if (!phone) {
+        showToast('لم يتم تدوين رقم هاتف لولي أمر هذا الطالب', 'error');
+        return;
+      }
+      const schoolName = schoolMetadata.name || 'المدرسة';
+      const defaultMsg = `السلام عليكم ورحمة الله، ولي أمر الطالب ${studentName} المحترم، معكم الأخصائي الاجتماعي بمدرسة ${schoolName}. نرجو التواصل معنا لأمر يخص الطالب.`;
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(defaultMsg)}`, '_blank');
+    }
+
+    function copyWhatsAppText() {
+      const text = document.getElementById('waMessageBody').value;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('تم نسخ نص الرسالة', 'success');
+      });
+    }
+
+    /* =====================================================================
+       8. REPORTS GENERATION
+       ===================================================================== */
+    function generateReportView() {
+      const type = document.getElementById('reportTypeSelect').value;
+      const container = document.getElementById('reportDynamicContent');
+      const studentWrapper = document.getElementById('reportStudentSelectWrapper');
+      
+      document.getElementById('reportDateBadge').innerText = 'التاريخ: ' + new Date().toLocaleDateString('ar-SA');
+      document.getElementById('reportSchoolNameDisplay').innerText = schoolMetadata.name || 'اسم المدرسة';
+      document.getElementById('repCounselorSign').innerText = schoolMetadata.counselor ? 'أ. ' + schoolMetadata.counselor : 'الأخصائي الاجتماعي';
+      document.getElementById('repPrincipalSign').innerText = schoolMetadata.principal ? 'أ. ' + schoolMetadata.principal : 'مدير المدرسة';
+
+      if (type === 'studentDossier') {
+        studentWrapper.style.display = 'block';
+        const stId = document.getElementById('reportStudentSelect').value;
+        const student = studentsDB.find(s => s.studentId === stId);
+
+        if (!student) {
+          container.innerHTML = '<div class="empty-state-box"><p>يرجى اختيار طالب من القائمة لعرض ملفه التقريري.</p></div>';
+          return;
+        }
+
+        const studentCases = casesDB.filter(c => c.studentId === student.studentId);
+        container.innerHTML = `
+          <div style="background:#f8fafc; padding:14px; border-radius:8px; border:1px solid var(--border); margin-bottom:16px;">
+            <h3 style="font-size:1rem; margin-bottom:10px; color:var(--primary);">بطاقة الرعاية الشاملة للطالب</h3>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px; font-size:0.85rem;">
+              <div><b>اسم الطالب:</b> ${student.name}</div>
+              <div><b>الرقم الأكاديمي:</b> ${student.studentId}</div>
+              <div><b>الصف:</b> ${student.grade}</div>
+              <div><b>الوضع الأسري:</b> ${student.familyStatus}</div>
+              <div><b>هاتف ولي الأمر:</b> ${student.parentPhone}</div>
+              <div><b>تاريخ التسجيل:</b> ${student.createdAt}</div>
+            </div>
+          </div>
+
+          <h4 style="font-size:0.95rem; margin-bottom:10px;">سجل الحالات والمشكلات المسجلة (${studentCases.length}):</h4>
+          ${studentCases.length === 0 ? '<div class="empty-state-box"><p>سجل الطالب نظيف ولا توجد حالات مسجلة له.</p></div>' : ''}
+          ${studentCases.map(c => `
+            <div style="border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+                <span class="badge" style="background:var(--primary); color:#fff;">النوع: ${c.type}</span>
+                <span class="badge badge-urgent">الأهمية: ${c.priority}</span>
+                <span class="badge badge-in-progress">المرحلة: ${c.status}</span>
+              </div>
+              <p style="font-size:0.85rem; margin-bottom:4px;"><b>وصف المشكلة:</b> ${c.problemDesc}</p>
+              <p style="font-size:0.85rem; margin-bottom:4px;"><b>الإجراءات المتخذة:</b> ${c.actionsTaken || 'لا يوجد'}</p>
+              <p style="font-size:0.85rem;"><b>التوصيات:</b> ${c.recommendations || 'لا يوجد'}</p>
+            </div>
+          `).join('')}
+        `;
+      } else if (type === 'urgentOnly') {
+        studentWrapper.style.display = 'none';
+        const urgentCases = casesDB.filter(c => c.priority === 'عاجلة');
+        if (urgentCases.length === 0) {
+          container.innerHTML = '<div class="empty-state-box"><i class="fa-solid fa-circle-check" style="color:#10b981;"></i><h4>لا توجد حالات عاجلة مسجلة حالياً</h4></div>';
+        } else {
+          container.innerHTML = `
+            <h3 style="font-size:1rem; margin-bottom:12px; color:var(--danger);">تقرير الحالات العاجلة التي تتطلب تدخلاً مستمراً</h3>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>رقم الطالب</th>
+                  <th>اسم الطالب</th>
+                  <th>الصف</th>
+                  <th>نوع الحالة</th>
+                  <th>وصف المشكلة</th>
+                  <th>المرحلة</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${urgentCases.map(c => `
+                  <tr>
+                    <td>${c.studentId}</td>
+                    <td><b>${c.studentName}</b></td>
+                    <td>${c.grade}</td>
+                    <td>${c.type}</td>
+                    <td>${c.problemDesc}</td>
+                    <td>${c.status}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `;
+        }
+      } else {
+        studentWrapper.style.display = 'none';
+        container.innerHTML = `
+          <h3 style="font-size:1rem; margin-bottom:14px; color:var(--primary);">التقرير الإحصائي العام لأنشطة الرعاية والتوجيه</h3>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:18px;">
+            <div style="border:1px solid var(--border); padding:10px; border-radius:8px; text-align:center;">
+              <div style="font-size:1.4rem; font-weight:800; color:var(--primary);">${studentsDB.length}</div>
+              <div style="font-size:0.75rem;">إجمالي الطلاب</div>
+            </div>
+            <div style="border:1px solid var(--border); padding:10px; border-radius:8px; text-align:center;">
+              <div style="font-size:1.4rem; font-weight:800; color:var(--accent);">${casesDB.length}</div>
+              <div style="font-size:0.75rem;">إجمالي الحالات</div>
+            </div>
+            <div style="border:1px solid var(--border); padding:10px; border-radius:8px; text-align:center;">
+              <div style="font-size:1.4rem; font-weight:800; color:var(--warning);">${casesDB.filter(c => c.status === 'قيد المتابعة').length}</div>
+              <div style="font-size:0.75rem;">حالات قيد المتابعة</div>
+            </div>
+            <div style="border:1px solid var(--border); padding:10px; border-radius:8px; text-align:center;">
+              <div style="font-size:1.4rem; font-weight:800; color:var(--success);">${casesDB.filter(c => c.status === 'تمت المعالجة' || c.status === 'مغلقة').length}</div>
+              <div style="font-size:0.75rem;">حالات منجزة</div>
+            </div>
+          </div>
+          <p style="font-size:0.85rem; line-height:1.6; color:var(--text-main);">
+            يعكس هذا التقرير واقع عمل التوجيه الطلابي بالمدرسة بناءً على البيانات التي تم إدخالها من قبل الأخصائي الاجتماعي، لتوفير بيئة مدرسية آمنة ومحفزة للطلاب.
+          </p>
+        `;
+      }
+    }
+
+    function exportFullReportExcel() {
+      if (casesDB.length === 0) {
+        showToast('لا توجد بيانات حالات لتصديرها حتى الآن', 'info');
+            return;
+          }
+          const worksheetData = [
+            ['كود الحالة', 'رقم الطالب', 'اسم الطالب', 'الصف', 'نوع الحالة', 'درجة الأهمية', 'حالة الملف', 'تاريخ التسجيل', 'وصف المشكلة', 'الإجراءات المتخذة', 'التوصيات', 'عدد الجلسات']
+          ];
+
+          casesDB.forEach(c => {
+            worksheetData.push([
+              c.id,
+              c.studentId,
+              c.studentName,
+              c.grade || '',
+              c.type,
+              c.priority,
+              c.status,
+              c.createdAt,
+              c.problemDesc,
+              c.actionsTaken || '',
+              c.recommendations || '',
+              (c.followUps ? c.followUps.length : 0)
+            ]);
+          });
+
+          const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "تقرير الحالات الشامل");
+          XLSX.writeFile(wb, `تقرير_الحالات_الاجتماعية_${new Date().toISOString().split('T')[0]}.xlsx`);
+          showToast('تم تصدير تقرير الحالات بنجاح بصيغة Excel', 'success');
+        }
+
+    /* =====================================================================
+       9. SETTINGS & METADATA MANAGEMENT
+       ===================================================================== */
+    function saveSchoolMetadata() {
+      const schoolName = document.getElementById('setSchoolName').value.trim();
+      const counselorName = document.getElementById('setCounselorName').value.trim();
+      const principalName = document.getElementById('setPrincipalName').value.trim();
+
+      schoolMetadata.name = schoolName;
+      schoolMetadata.counselor = counselorName;
+      schoolMetadata.principal = principalName;
+
+      saveAppData();
+      updateSchoolMetadataUI();
+      showToast('تم حفظ وتحديث بيانات المدرسة بنجاح', 'success');
+    }
+
+    function updateSchoolMetadataUI() {
+      // Sidebar Profile Info
+      const counselor = schoolMetadata.counselor || 'الأخصائي الاجتماعي';
+      document.getElementById('userNameDisplay').innerText = counselor;
+      document.getElementById('avatarLetter').innerText = counselor.trim().charAt(0) || 'أ';
+
+      // Inputs in Settings
+      document.getElementById('setSchoolName').value = schoolMetadata.name || '';
+      document.getElementById('setCounselorName').value = schoolMetadata.counselor || '';
+      document.getElementById('setPrincipalName').value = schoolMetadata.principal || '';
+
+      // Printable Report Defaults
+      document.getElementById('reportSchoolNameDisplay').innerText = schoolMetadata.name || 'اسم المدرسة';
+      document.getElementById('repCounselorSign').innerText = schoolMetadata.counselor ? 'أ. ' + schoolMetadata.counselor : 'الأخصائي الاجتماعي';
+      document.getElementById('repPrincipalSign').innerText = schoolMetadata.principal ? 'أ. ' + schoolMetadata.principal : 'مدير المدرسة';
+    }
+
+    function openRulesModal() {
+      document.getElementById('rulesModal').classList.add('active');
+    }
+
+    function closeRulesModal() {
+      document.getElementById('rulesModal').classList.remove('active');
+    }
+
+    /* =====================================================================
+       10. TOAST NOTIFICATION UTILITY
+       ===================================================================== */
+    let toastTimeout = null;
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toastNotification');
+      const toastMsg = document.getElementById('toastMessage');
+
+      toastMsg.innerText = message;
+      toast.className = 'toast show';
+
+      if (type === 'error') {
+        toast.style.background = 'var(--danger)';
+      } else if (type === 'info') {
+        toast.style.background = 'var(--info)';
+      } else {
+        toast.style.background = 'var(--success)';
+      }
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
